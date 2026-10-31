@@ -1,0 +1,51 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dosyalari klasorlere yerlestir
+        run: |
+          mkdir -p lib/screens lib/providers lib/theme
+          [ -f main.dart ] && mv main.dart lib/main.dart || true
+          [ -f app_theme.dart ] && mv app_theme.dart lib/theme/app_theme.dart || true
+          [ -f bluetooth_provider.dart ] && mv bluetooth_provider.dart lib/providers/bluetooth_provider.dart || true
+          [ -f connect_screen.dart ] && mv connect_screen.dart lib/screens/connect_screen.dart || true
+          [ -f dashboard_screen.dart ] && mv dashboard_screen.dart lib/screens/dashboard_screen.dart || true
+          [ -f splash_screen.dart ] && mv splash_screen.dart lib/screens/splash_screen.dart || true
+          find lib -type f
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Android klasorunu olustur
+        run: flutter create . --platforms=android --project-name firebot_control
+
+      - name: Assets klasorunu olustur
+        run: mkdir -p assets
+
+      - name: Bluetooth izinlerini manifest'e ekle
+        run: |
+          sed -i 's#<application#<uses-permission android:name="android.permission.BLUETOOTH_SCAN" android:usesPermissionFlags="neverForLocation" />\n    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\n    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />\n    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />\n    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />\n    <application#' android/app/src/main/AndroidManifest.xml
+          grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
+
+      - run: flutter pub get
+
+      - run: flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firebot-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
