@@ -48,8 +48,9 @@ jobs:
         run: |
           F=$(find "$HOME/.pub-cache" -path '*flutter_bluetooth_serial*/android/build.gradle' | head -n 1)
           echo "Duzeltilen dosya: $F"
-          sed -i '/^android {/a\    namespace "io.github.edufolly.flutterbluetoothserial"' "$F"
           sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 34/' "$F"
+          sed -i 's/jcenter()/mavenCentral()/g' "$F"
+          printf '\nandroid {\n    namespace "io.github.edufolly.flutterbluetoothserial"\n}\n' >> "$F"
           cat "$F"
 
       - run: flutter build apk --release
