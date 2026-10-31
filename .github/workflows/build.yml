@@ -28,10 +28,11 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.29.3'
           channel: stable
 
       - name: Android klasorunu olustur
-        run: flutter create . --platforms=android --project-name firebot_control
+        run: flutter create . --platforms=android --org com.firebot --project-name firebot_control
 
       - name: Assets klasorunu olustur
         run: mkdir -p assets
@@ -42,6 +43,14 @@ jobs:
           grep -n "uses-permission" android/app/src/main/AndroidManifest.xml
 
       - run: flutter pub get
+
+      - name: Eski Bluetooth paketini yeni Android araciyla uyumlu yap
+        run: |
+          F=$(find "$HOME/.pub-cache" -path '*flutter_bluetooth_serial*/android/build.gradle' | head -n 1)
+          echo "Duzeltilen dosya: $F"
+          sed -i '/^android {/a\    namespace "io.github.edufolly.flutterbluetoothserial"' "$F"
+          sed -i -E 's/compileSdkVersion [0-9]+/compileSdkVersion 34/' "$F"
+          cat "$F"
 
       - run: flutter build apk --release
 
